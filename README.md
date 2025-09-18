@@ -1,0 +1,1 @@
+# Mi Tienda con Secciones\n\nIncluye agrupación de productos por secciones definidas por el admin.
