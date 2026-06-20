@@ -57,7 +57,7 @@
         <label>Precio</label>
         <input id="pPrice" type="number" step="0.01" required />
         <label>URL de la imagen</label>
-        <input id="pImage" type="url" required />
+        <input id="pImage" type="url" placeholder="https://ejemplo.com/imagen.jpg" required />
         <label>Sección</label>
         <input id="pSection" placeholder="Ej: Ropa, Accesorios..." required />
         <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
@@ -89,7 +89,33 @@
     const KEY_CART = 'tienda_cart';
     const KEY_IS_ADMIN = 'tienda_is_admin';
     const saveProducts = (list) => localStorage.setItem(KEY_PRODUCTS, JSON.stringify(list));
-    const loadProducts = () => JSON.parse(localStorage.getItem(KEY_PRODUCTS) || '[]');
+    
+    // Modificado para que si está vacío cargue productos de muestra con imágenes reales de internet
+    const loadProducts = () => {
+      const guardados = JSON.parse(localStorage.getItem(KEY_PRODUCTS) || '[]');
+      if (guardados.length === 0) {
+        const productosPorDefecto = [
+          {
+            name: "Reloj Inteligente",
+            desc: "Smartwatch deportivo con monitoreo de ritmo cardíaco y notificaciones.",
+            price: 123.00,
+            image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80",
+            section: "Electrónica"
+          },
+          {
+            name: "Zapatillas Deportivas",
+            desc: "Zapatillas livianas ideales para correr y entrenamiento diario.",
+            price: 250.00,
+            image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80",
+            section: "Calzado"
+          }
+        ];
+        saveProducts(productosPorDefecto);
+        return productosPorDefecto;
+      }
+      return guardados;
+    };
+
     const saveCart = (cart) => localStorage.setItem(KEY_CART, JSON.stringify(cart));
     const loadCart = () => JSON.parse(localStorage.getItem(KEY_CART) || '[]');
     const setAdmin = (flag) => localStorage.setItem(KEY_IS_ADMIN, flag ? '1' : '0');
@@ -104,6 +130,7 @@
     const productForm = document.getElementById('productForm');
     const sendWhatsapp = document.getElementById('sendWhatsapp');
     const clearCartBtn = document.getElementById('clearCart');
+    const closeAdminBtn = document.getElementById('closeAdmin');
     const pName=document.getElementById('pName'),pDesc=document.getElementById('pDesc'),pPrice=document.getElementById('pPrice'),pImage=document.getElementById('pImage'),pSection=document.getElementById('pSection');
 
     function escapeHtml(s){return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
@@ -119,11 +146,11 @@
         const grid=document.createElement('div');grid.className='grid';
         grouped[section].forEach((p,idx)=>{
           const card=document.createElement('div');card.className='card';
-          card.innerHTML=`<img class="prod" src="${escapeHtml(p.image)}">
+          card.innerHTML=`<img class="prod" src="${p.image}" onerror="this.src='https://placehold.co/600x400?text=Error+en+Imagen'">
             <div class="title">${escapeHtml(p.name)}</div>
             <div>${escapeHtml(p.desc)}</div>
             <div class="price">$ ${Number(p.price).toFixed(2)}</div>
-            <button class="btn btn-primary">Agregar</button>`;
+            <button class="btn btn-primary" style="margin-top:8px; width:100%;">Agregar</button>`;
           card.querySelector('button').addEventListener('click',()=>addToCart(p));
           grid.appendChild(card);
         });
@@ -144,8 +171,8 @@
       if(count===0){cartEl.style.display='none';sendWhatsapp.style.display='none';clearCartBtn.style.display='none';cartCountEl.style.display='none';cartEl.innerHTML='';return;}
       cartEl.style.display='block';sendWhatsapp.style.display='inline-block';clearCartBtn.style.display='inline-block';cartCountEl.style.display='inline-block';cartCountEl.textContent=count;
       let total=0;cartEl.innerHTML='';
-      cart.forEach((c,i)=>{total+=c.price*c.qty;cartEl.innerHTML+=`<div>${c.name} (${c.section}) x${c.qty} - $${c.price}</div>`;});
-      cartEl.innerHTML+=`<div><strong>Total: $${total}</strong></div>`;
+      cart.forEach((c,i)=>{total+=c.price*c.qty;cartEl.innerHTML+=`<div style="margin-bottom:6px;">${c.name} (${c.section}) x${c.qty} - $${(c.price*c.qty).toFixed(2)}</div>`;});
+      cartEl.innerHTML+=`<div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;"><strong>Total: $${total.toFixed(2)}</strong></div>`;
     }
 
     function buildWhatsappMessage(){
@@ -159,9 +186,13 @@
     clearCartBtn.addEventListener('click',()=>{saveCart([]);renderCart();});
     openCartBtn.addEventListener('click',()=>{renderCart();cartEl.scrollIntoView();});
 
-    adminToggle.addEventListener('click',()=>{if(isAdmin()){setAdmin(false);adminPanel.style.display='none';renderProducts();return;}const pw=prompt('Contraseña:');if(pw===ADMIN_PASSWORD){setAdmin(true);adminPanel.style.display='block';}else alert('Incorrecta');});
+    adminToggle.addEventListener('click',()=>{if(isAdmin()){setAdmin(false);adminPanel.style.display='none';return;}const pw=prompt('Contraseña:');if(pw===ADMIN_PASSWORD){setAdmin(true);adminPanel.style.display='block';}else alert('Incorrecta');});
+    closeAdminBtn.addEventListener('click',()=>{adminPanel.style.display='none';});
+    
     productForm.addEventListener('submit',e=>{e.preventDefault();const p={name:pName.value,desc:pDesc.value,price:Number(pPrice.value),image:pImage.value,section:pSection.value};const list=loadProducts();list.push(p);saveProducts(list);productForm.reset();renderProducts();});
 
+    // Carga inicial al abrir la página
+    if(isAdmin()){adminPanel.style.display='block';}
     renderProducts();renderCart();
   </script>
 </body>
