@@ -11,12 +11,13 @@
     header{background:linear-gradient(90deg, rgba(15,118,209,0.08), transparent);padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
     .container{max-width:1100px;margin:18px auto;padding:0 16px}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-    .card{background:#fff;border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(11,23,32,0.06)}
+    .card{background:#fff;border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(11,23,32,0.06);position:relative;}
     img.prod{width:100%;height:160px;object-fit:cover;border-radius:8px}
     .title{font-weight:600;margin:8px 0}
     .price{color:var(--accent);font-weight:700}
     .btn{display:inline-block;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
     .btn-primary{background:var(--accent);color:#fff}
+    .btn-danger{background:#e53e3e;color:#fff}
     .btn-ghost{background:transparent;border:1px solid #e6eef7}
     .topbar{display:flex;gap:12px;align-items:center}
     .cart-btn{position:relative}
@@ -28,6 +29,7 @@
     .muted{color:#546173;font-size:13px}
     .small{font-size:13px}
     h3.section-title{margin-top:24px;color:#0f172a}
+    .admin-actions{margin-top:8px;display:flex;gap:6px;}
     @media (max-width:520px){img.prod{height:120px}}
   </style>
 </head>
@@ -62,138 +64,4 @@
         <input id="pSection" placeholder="Ej: Ropa, Accesorios..." required />
         <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
           <button type="submit" class="btn btn-primary">Agregar producto</button>
-          <button id="closeAdmin" type="button" class="btn btn-ghost">Cerrar panel</button>
-        </div>
-      </form>
-    </section>
-
-    <section>
-      <h2>Productos</h2>
-      <div id="products"></div>
-    </section>
-
-    <section style="margin-top:20px">
-      <h2>Carrito</h2>
-      <div id="cart" class="card" style="display:none;padding:12px"></div>
-      <div style="margin-top:10px;display:flex;gap:8px">
-        <button id="sendWhatsapp" class="btn btn-primary" style="display:none">Enviar por WhatsApp</button>
-        <button id="clearCart" class="btn btn-ghost" style="display:none">Vaciar carrito</button>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    const ADMIN_PASSWORD = '1168593804';
-    const WHATSAPP_NUMBER = '5491122806874';
-    const KEY_PRODUCTS = 'tienda_products_secciones';
-    const KEY_CART = 'tienda_cart';
-    const KEY_IS_ADMIN = 'tienda_is_admin';
-    const saveProducts = (list) => localStorage.setItem(KEY_PRODUCTS, JSON.stringify(list));
-    
-    // Modificado para que si está vacío cargue productos de muestra con imágenes reales de internet
-    const loadProducts = () => {
-      const guardados = JSON.parse(localStorage.getItem(KEY_PRODUCTS) || '[]');
-      if (guardados.length === 0) {
-        const productosPorDefecto = [
-          {
-            name: "Reloj Inteligente",
-            desc: "Smartwatch deportivo con monitoreo de ritmo cardíaco y notificaciones.",
-            price: 123.00,
-            image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80",
-            section: "Electrónica"
-          },
-          {
-            name: "Zapatillas Deportivas",
-            desc: "Zapatillas livianas ideales para correr y entrenamiento diario.",
-            price: 250.00,
-            image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80",
-            section: "Calzado"
-          }
-        ];
-        saveProducts(productosPorDefecto);
-        return productosPorDefecto;
-      }
-      return guardados;
-    };
-
-    const saveCart = (cart) => localStorage.setItem(KEY_CART, JSON.stringify(cart));
-    const loadCart = () => JSON.parse(localStorage.getItem(KEY_CART) || '[]');
-    const setAdmin = (flag) => localStorage.setItem(KEY_IS_ADMIN, flag ? '1' : '0');
-    const isAdmin = () => localStorage.getItem(KEY_IS_ADMIN) === '1';
-
-    const productsEl = document.getElementById('products');
-    const cartEl = document.getElementById('cart');
-    const cartCountEl = document.getElementById('cartCount');
-    const openCartBtn = document.getElementById('openCart');
-    const adminToggle = document.getElementById('adminToggle');
-    const adminPanel = document.getElementById('adminPanel');
-    const productForm = document.getElementById('productForm');
-    const sendWhatsapp = document.getElementById('sendWhatsapp');
-    const clearCartBtn = document.getElementById('clearCart');
-    const closeAdminBtn = document.getElementById('closeAdmin');
-    const pName=document.getElementById('pName'),pDesc=document.getElementById('pDesc'),pPrice=document.getElementById('pPrice'),pImage=document.getElementById('pImage'),pSection=document.getElementById('pSection');
-
-    function escapeHtml(s){return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
-
-    function renderProducts(){
-      const list = loadProducts();
-      productsEl.innerHTML='';
-      if(!list.length){productsEl.innerHTML='<div class="card">No hay productos</div>';return;}
-      const grouped={};
-      list.forEach(p=>{if(!grouped[p.section])grouped[p.section]=[];grouped[p.section].push(p);});
-      for(const section in grouped){
-        const h=document.createElement('h3');h.className='section-title';h.textContent=section;productsEl.appendChild(h);
-        const grid=document.createElement('div');grid.className='grid';
-        grouped[section].forEach((p,idx)=>{
-          const card=document.createElement('div');card.className='card';
-          card.innerHTML=`<img class="prod" src="${p.image}" onerror="this.src='https://placehold.co/600x400?text=Error+en+Imagen'">
-            <div class="title">${escapeHtml(p.name)}</div>
-            <div>${escapeHtml(p.desc)}</div>
-            <div class="price">$ ${Number(p.price).toFixed(2)}</div>
-            <button class="btn btn-primary" style="margin-top:8px; width:100%;">Agregar</button>`;
-          card.querySelector('button').addEventListener('click',()=>addToCart(p));
-          grid.appendChild(card);
-        });
-        productsEl.appendChild(grid);
-      }
-    }
-
-    function addToCart(product){
-      const cart=loadCart();
-      const found=cart.find(it=>it.name===product.name&&it.section===product.section);
-      if(found){found.qty+=1;}else{cart.push({...product,qty:1});}
-      saveCart(cart);renderCart();
-    }
-
-    function renderCart(){
-      const cart=loadCart();
-      const count=cart.reduce((s,it)=>s+it.qty,0);
-      if(count===0){cartEl.style.display='none';sendWhatsapp.style.display='none';clearCartBtn.style.display='none';cartCountEl.style.display='none';cartEl.innerHTML='';return;}
-      cartEl.style.display='block';sendWhatsapp.style.display='inline-block';clearCartBtn.style.display='inline-block';cartCountEl.style.display='inline-block';cartCountEl.textContent=count;
-      let total=0;cartEl.innerHTML='';
-      cart.forEach((c,i)=>{total+=c.price*c.qty;cartEl.innerHTML+=`<div style="margin-bottom:6px;">${c.name} (${c.section}) x${c.qty} - $${(c.price*c.qty).toFixed(2)}</div>`;});
-      cartEl.innerHTML+=`<div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;"><strong>Total: $${total.toFixed(2)}</strong></div>`;
-    }
-
-    function buildWhatsappMessage(){
-      const cart=loadCart();
-      let msg='Nueva orden:\n';
-      cart.forEach(c=>{msg+=`${c.name} (${c.section}) x${c.qty} - $${c.price}\n`;});
-      return encodeURIComponent(msg);
-    }
-
-    sendWhatsapp.addEventListener('click',()=>{const msg=buildWhatsappMessage();window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`,'_blank');});
-    clearCartBtn.addEventListener('click',()=>{saveCart([]);renderCart();});
-    openCartBtn.addEventListener('click',()=>{renderCart();cartEl.scrollIntoView();});
-
-    adminToggle.addEventListener('click',()=>{if(isAdmin()){setAdmin(false);adminPanel.style.display='none';return;}const pw=prompt('Contraseña:');if(pw===ADMIN_PASSWORD){setAdmin(true);adminPanel.style.display='block';}else alert('Incorrecta');});
-    closeAdminBtn.addEventListener('click',()=>{adminPanel.style.display='none';});
-    
-    productForm.addEventListener('submit',e=>{e.preventDefault();const p={name:pName.value,desc:pDesc.value,price:Number(pPrice.value),image:pImage.value,section:pSection.value};const list=loadProducts();list.push(p);saveProducts(list);productForm.reset();renderProducts();});
-
-    // Carga inicial al abrir la página
-    if(isAdmin()){adminPanel.style.display='block';}
-    renderProducts();renderCart();
-  </script>
-</body>
-</html>
+          <button id="closeAdmin" type
